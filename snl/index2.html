@@ -546,10 +546,10 @@
       const token = document.getElementById(`p${players[playerIndex].id}-token`);
       token.classList.remove('hidden');
       const offsets = [
-        { x: 6, y: 6 },
-        { x: 28, y: 6 },
-        { x: 6, y: 28 },
-        { x: 28, y: 28 }
+        { x: 20, y: 20 },
+        { x: 50, y: 20 },
+        { x: 20, y: 50 },
+        { x: 50, y: 50 }
       ];
       const off = offsets[playerIndex % 4];
       token.style.left = `${cell.offsetLeft + off.x}px`;
