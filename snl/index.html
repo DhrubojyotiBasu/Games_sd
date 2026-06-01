@@ -285,11 +285,11 @@
       const token = actor === 'player' ? playerTokenEl : computerTokenEl;
       token.classList.remove('hidden');
       if (actor === 'player') {
-        token.style.left = `${cell.offsetLeft + 10}px`;
-        token.style.top  = `${cell.offsetTop  + 10}px`;
+        token.style.left = `${cell.offsetLeft + 20}px`;
+        token.style.top  = `${cell.offsetTop  + 20}px`;
       } else {
-        token.style.left = `${cell.offsetLeft + 24}px`;
-        token.style.top  = `${cell.offsetTop  + 24}px`;
+        token.style.left = `${cell.offsetLeft + 50}px`;
+        token.style.top  = `${cell.offsetTop  + 50}px`;
       }
     }
 
