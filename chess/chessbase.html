@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Satranch — The Ultimate Chess Arena</title>
+  
+  <style>
+    /* CSS custom variables matching your main.html layout */
+    :root {
+      --bg-color: #060911;
+      --card-bg: #111827;
+      --border: rgba(255, 255, 255, 0.08);
+      --cyan: #00e5ff;
+      --amber: #d97706;
+      --violet: #8b5cf6;
+      --text: #ffffff;
+      --desc: #94a3b8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+    
+    .satranch{
+      position: relative;
+     display: flex;
+     justify-content: center; 
+     animation: floatIcon 3s ease-in-out infinite;
+     }
+    @keyframes floatIcon{
+      0% { transform: translateY(0);}
+      50%{ transform: translateY(-20px);}
+    }
+    .satranch::before {
+      content: "";
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      border-radius: 100%;
+      background: radial-gradient(circle at center, rgba(231, 221, 221, 0.1) 50%, rgb(225, 177, 30) 210%);
+      z-index: 1;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background-image: radial-gradient(circle at 50% 20%, rgba(212, 175, 55, 0.12) 0%, transparent 50%);
+    }
+
+    /* Simple Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background-color: #020617;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-group { display: flex; align-items: center; gap: 0.75rem; }
+    .logo-title { font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; color: #fbbf24; }
+    .logo-sub { font-size: 0.55rem; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; }
+    .version { font-size: 0.75rem; color: var(--amber); font-family: monospace; }
+
+    /* Main Grid Layout */
+    main { max-width: 1000px; margin: 0 auto; padding: 3rem 1.5rem; width: 100%; }
+
+    .hero { text-align: center; margin-bottom: 3rem; }
+    .hero h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; color: #fbbf24; }
+    .hero p { color: var(--desc); font-size: 0.9rem; max-width: 500px; margin: 0 auto; }
+
+    .game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
+
+    /* Card Layout & Colors */
+    .game-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .game-card:hover { transform: translateY(-8px); }
+    .card-cyan:hover { border-color: var(--cyan); box-shadow: 0 10px 20px rgba(0, 229, 255, 0.1); }
+    .card-amber:hover { border-color: var(--amber); box-shadow: 0 10px 20px rgba(217, 119, 6, 0.1); }
+    .card-violet:hover { border-color: var(--violet); box-shadow: 0 10px 20px rgba(139, 92, 246, 0.1); }
+
+    .card-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+    .card-cyan .card-icon { background-color: rgba(0, 229, 255, 0.1); color: var(--cyan); }
+    .card-amber .card-icon { background-color: rgba(217, 119, 6, 0.1); color: var(--amber); }
+    .card-violet .card-icon { background-color: rgba(139, 92, 246, 0.1); color: var(--violet); }
+
+    .card-tag { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin-bottom: 0.25rem; }
+    .card-cyan .card-tag { color: var(--cyan); }
+    .card-amber .card-tag { color: var(--amber); }
+    .card-violet .card-tag { color: var(--violet); }
+
+    .game-title { font-size: 1.35rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .game-desc { color: var(--desc); font-size: 0.85rem; margin-bottom: 2rem; line-height: 1.5; }
+
+    /* Button Styling */
+    .play-btn {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: #020617;
+      transition: opacity 0.2s ease;
+    }
+
+    .play-btn:hover { opacity: 0.9; }
+    .btn-cyan { background-color: var(--cyan); }
+    .btn-amber { background-color: var(--amber); }
+    .btn-violet { background-color: var(--violet); }
+
+    /* Bottom Info Card */
+    .tip-box { border: 1px solid var(--border); background-color: rgba(2, 6, 23, 0.2); padding: 1rem; border-radius: 12px; display: flex; align-items: center; gap: 1rem; }
+    .tip-icon { background-color: rgba(217, 119, 6, 0.1); color: var(--amber); padding: 0.5rem; border-radius: 8px; display: flex; }
+    .tip-content h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--amber); letter-spacing: 1px; }
+    .tip-content p { font-size: 0.75rem; color: var(--desc); margin-top: 0.1rem; }
+
+    footer { border-top: 1px solid var(--border); background-color: #020617; padding: 1rem; text-align: center; font-size: 0.75rem; color: #4b5563; }
+
+    @media (max-width: 640px) {
+      header { padding: 1rem; }
+      .hero h1 { font-size: 2rem; }
+      .tip-box { flex-direction: column; text-align: center; }
+    }
+
+    .back{
+      border: red; 
+      margin-left: -10px;
+      margin-right: 10px; 
+      font-size:20px; 
+      padding:10px 14px; 
+      background-color: rgb(224, 17, 17); 
+      border-radius: 100%;
+    }
+    .back:hover { transform: translateY(-4px); border-color: var(--cyan); box-shadow: 0 0px 20px rgba(237, 125, 125, 0.5); }
+  </style>
+</head>
+<body>
+
+  <!-- Simple Header -->
+  <header>
+    <div class="logo-group">
+      <div class="logo-group">
+        <h2 class="logo-title">SATRANCH</h2>
+      </div>
+      <div>
+        <p class="logo-sub">Grandmaster Suite</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Game Selection Screen -->
+  <main>
+    <div style="display: inline; margin-left: 5px;">
+    <button onclick="history.back()" class='back'>&#8617</button>
+  </div>
+    <div class="satranch">
+      <img src="Satranch.png" alt="Satranch Logo" width="400" style="margin-bottom: 1rem;">
+    </div>
+    <div class="hero">
+      <h1>CHOOSE YOUR BATTLE</h1>
+      <p>Deploy deep master strategies, customize engine intellect, and challenge champions offline or in real-time cosmic matchmaking.</p>
+    </div>
+    
+    <!-- Interactive Battle Cards Grid -->
+    <div class="game-grid">
+      
+      <!-- Card 1: Against Computer -->
+      <div class="game-card card-cyan">
+        <div>
+          <div class="card-icon">💻</div>
+          <p class="card-tag">Solo PvE</p>
+          <h3 class="game-title">Against Computer</h3>
+          <p class="game-desc">Test your tactics against the adaptive Satranch tactical engine. Apprentice to Grandmaster difficulty.</p>
+        </div>
+        <button onclick="window.location.href='pve/index.html'" class="play-btn btn-cyan">Play Now</button>
+      </div>
+
+      <!-- Card 2: Play Offline -->
+      <div class="game-card card-amber">
+        <div>
+          <div class="card-icon">🏆</div>
+          <p class="card-tag">Local PvP</p>
+          <h3 class="game-title">Play Offline</h3>
+          <p class="game-desc">Pass & Play on the same device. Absolute classic local board setup. Perfect for physical battles.</p>
+        </div>
+        <button onclick="window.location.href='pvp/index.html'" class="play-btn btn-amber">Play Now</button>
+      </div>
+
+      <!-- Card 3: Online Duel -->
+      <div class="game-card card-violet">
+        <div>
+          <div class="card-icon">🌐</div>
+          <p class="card-tag">Global</p>
+          <h3 class="game-title">Online Duel</h3>
+          <p class="game-desc">Matchmaking on dynamic global servers. Battle real-world champions to scale up your leaderboard ranking.</p>
+        </div>
+        <button onclick="window.location.href='duel/chess-firebase.html'" class="play-btn btn-violet">Play Now</button>
+      </div>
+
+    </div>
+
+    <!-- Strategy Info Tip Card -->
+    <div class="tip-box">
+      <div class="tip-icon">💡</div>
+      <div class="tip-content">
+        <h4>Tactical Strategy Insight</h4>
+        <p>"The chessboard is the gym of the mind. Control the center squares early to secure a territorial advantage."</p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

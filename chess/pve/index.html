@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess vs Computer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .back{
+      border: red; 
+      margin-left: -10px;
+      margin-right: 10px; 
+      font-size:20px; 
+      padding:10px 14px; 
+      background-color: rgb(224, 17, 17); 
+      border-radius: 100%;
+    }
+    .back:hover { transform: translateY(-4px); border-color: var(--cyan); box-shadow: 0 0px 20px rgba(237, 125, 125, 0.5); }
+  </style>
+</head>
+<body>
+  <!-- Game Over Overlay -->
+  <div id="gameOverOverlay" class="gameover-overlay hidden">
+    <div class="gameover-card">
+      <div id="gameOverIcon" class="gameover-icon">!</div>
+      <div id="gameOverTitle" class="gameover-title">Game Over</div>
+      <div id="gameOverSub" class="gameover-sub"></div>
+      <button id="gameOverNewGame" class="gameover-btn">Play Again</button>
+      <button onclick="history.back()" class="gameover-btn" style="background-color: red">Go Back</button>
+    </div>
+  </div>
+  <div style="display: inline; margin-top: 10px; margin-left: 50px;">
+    <button onclick="history.back()" class="back">&#8617</button>
+  </div>
+  <div class="layout">
+
+    <!-- LEFT: Game Settings -->
+    <aside class="sidebar left-panel">
+      <div class="sidebar-section">
+        <h2>Game settings</h2>
+        <div class="controls">
+          <div class="player-choice">
+            <span>Play as:</span>
+            <label><input type="radio" name="playerColor" value="w" checked /> White</label>
+            <label><input type="radio" name="playerColor" value="b" /> Black</label>
+          </div>
+          <label class="control-group">
+            <span>Difficulty</span>
+            <select id="difficultySelect">
+              <option value="1">Level 1 - Beginner</option>
+              <option value="2">Level 2 - Easy</option>
+              <option value="3">Level 3 - Casual</option>
+              <option value="5" selected>Level 4 - Intermediate</option>
+              <option value="8">Level 5 - Advanced</option>
+              <option value="12">Level 6 - Hard</option>
+              <option value="18">Level 7 - Expert</option>
+              <option value="20">Level 8 - Master</option>
+            </select>
+          </label>
+          <label class="control-group">
+            <span>Time control</span>
+            <select id="timerSelect">
+              <option value="300">5 minutes</option>
+              <option value="600">10 minutes</option>
+              <option value="900">15 minutes</option>
+              <option value="1200">20 minutes</option>
+              <option value="1500">25 minutes</option>
+              <option value="1800">30 minutes</option>
+              <option value="3600">60 minutes</option>
+              <option value="0">No time limit</option>
+            </select>
+          </label>
+          <button id="startButton" class="start-btn">Start Game</button>
+          <div class="action-row">
+            <button id="newGameButton" class="new-game-btn">New Game</button>
+            <button id="takebackButton" class="takeback-btn" disabled>Takeback</button>
+          </div>
+          
+          <div class="scoreboard">
+            <div class="score-item">
+              <span id="playerScoreLabel">You</span>
+              <span id="playerScoreValue">0</span>
+            </div>
+            <div class="score-item">
+              <span id="opponentScoreLabel">Computer</span>
+              <span id="opponentScoreValue">0</span>
+            </div>
+          </div>
+          <div class="timerboard">
+            <div id="playerTimerItem" class="timer-item">
+              <span id="playerTimerLabel">Your time</span>
+              <span id="playerTimerValue">05:00</span>
+            </div>
+            <div id="opponentTimerItem" class="timer-item">
+              <span id="opponentTimerLabel">Opponent time</span>
+              <span id="opponentTimerValue">05:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: Chess Board -->
+    <main class="board-main">
+      <div class="board-wrapper">
+        <div id="board" class="board" aria-label="Chessboard"></div>
+        <div id="computerColorInfo" class="info board-info"></div>
+        <div id="status" class="status">Press Start to begin</div>
+      </div>
+    </main>
+
+    <!-- RIGHT: Game Info & Live Move History -->
+    <aside class="sidebar right-panel">
+      <div class="sidebar-section">
+        <h2>Game info</h2>
+        <div class="info">
+          <p>Choose your color and difficulty, then press 'New Game' and 'Start Game' to play against the computer.</p>
+          <p>Use New Game to reset and Takeback to undo your last turn.</p>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h2>Move History</h2>
+        <div id="moveHistory" class="move-history">
+          <div class="move-list-empty">No moves played yet</div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="script.js"></script>
+</body>
+</html>

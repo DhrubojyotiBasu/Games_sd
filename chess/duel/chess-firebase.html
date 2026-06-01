@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Multiplayer Chess</title>
+  <style>
+    :root {
+      --light: #f1cd94;
+      --dark: #ec9d43ca;
+      --light-highlight: #5b7088;
+      --dark-highlight: #41536b;
+      --accent: #e2e8f0;
+      --background: #0f172a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      color: var(--accent);
+      background: radial-gradient(circle at top, #111827 0%, #0b1120 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      overflow: hidden;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr 260px;
+      grid-template-areas: "left center right";
+      align-items: start;
+      gap: 14px;
+      width: 100%;
+      max-width: 1200px;
+      height: calc(100vh - 32px);
+    }
+    .left-panel { grid-area: left; }
+    .board-main { grid-area: center; display: flex; justify-content: center; align-items: center; height: 100%; }
+    .right-panel { grid-area: right; }
+    .sidebar { display: flex; flex-direction: column; gap: 14px; max-height: 100%; }
+    .sidebar-section {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .sidebar h2 {
+      font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #94a3b8; margin-top: 0; margin-bottom: 12px; font-weight: 700;
+    }
+    .controls, .scoreboard { display: flex; flex-direction: column; gap: 10px; }
+    .player-choice { font-size: 0.9rem; }
+    
+    .new-game-btn, .takeback-btn, .gameover-btn, .draw-btn, .resign-btn {
+      width: 100%; padding: 10px; border-radius: 8px; border: none;
+      font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease;
+    }
+    .new-game-btn { background: #ef4444; color: white; }
+    .new-game-btn:hover { background: #dc2626; }
+    .takeback-btn { background: #f59e0b; color: white; }
+    .takeback-btn:hover:not(:disabled) { background: #d97706; }
+    .takeback-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+    
+    .draw-btn { background: #3b82f6; color: white; }
+    .draw-btn:hover:not(:disabled) { background: #2563eb; }
+    .draw-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+    
+    .resign-btn { background: #f72a2a; color: white; }
+    .resign-btn:hover:not(:disabled) { background: #f80202; }
+    .resign-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+
+    .score-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: #cbd5e1; }
+    .score-val { font-weight: 700; color: #f8fafc; }
+    .timers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+    .timer-item {
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .timer-item span:first-child { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 600; }
+    .timer-item span:last-child { font-size: 1.1rem; font-weight: 700; font-family: monospace; color: #cbd5e1; }
+    .timer-item.active { border-color: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.2); }
+    .timer-item.active span:last-child { color: #fbbf24; }
+    .board-wrapper { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+    .board {
+      display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+      width: min(70vh, 500px); height: min(70vh, 500px); border: 6px solid #1e293b;
+      border-radius: 8px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .square {
+      border: none; padding: 0; margin: 0; display: flex;
+      justify-content: center; align-items: center; position: relative;
+    }
+    .square.light { background-color: var(--light); }
+    .square.dark  { background-color: var(--dark); }
+    .square.selected { background-color: var(--light-highlight) !important; }
+    .square.legal::after {
+      content: ""; width: 24%; height: 24%; background: rgba(0,0,0,0.25);
+      border-radius: 50%; position: absolute;
+    }
+    .piece { width: 85%; height: 85%; object-fit: contain; z-index: 2; }
+    .status { font-size: 1.1rem; font-weight: 600; text-align: center; color: #f8fafc; }
+    .info { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin: 0; }
+    .board-info { color: #64748b; font-size: 0.8rem; }
+    .move-history {
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      height: 160px; overflow-y: auto; padding: 8px;
+    }
+    .move-list-empty { color: #475569; font-size: 0.85rem; text-align: center; margin-top: 16px; font-style: italic; }
+    .move-list { display: grid; grid-template-columns: 35px 1fr 1fr; gap: 4px; font-size: 0.85rem; font-family: monospace; }
+    .move-list-header { color: #64748b; font-weight: 700; border-bottom: 1px solid #1e293b; padding-bottom: 4px; margin-bottom: 4px; }
+    .move-num { color: #475569; text-align: right; padding-right: 6px; }
+    .move-notation { color: #cbd5e1; }
+
+    /* Custom Toast Container for temporary alerts without using window.alert() */
+    #toastContainer {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 10000; display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast {
+      background: #1e293b; color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 24px; border-radius: 8px; font-size: 0.9rem; font-weight: 500;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      animation: slideDown 0.3s ease-out forwards;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Overlays */
+    .gameover-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px);
+      display: flex; justify-content: center; align-items: center; z-index: 999;
+    }
+    .gameover-overlay.hidden { display: none !important; }
+    .gameover-card {
+      background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 24px; text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .lobby-card { width: 380px; }
+    .lobby-title { font-size: 1.6rem; color: #f8fafc; font-weight: 800; }
+    .lobby-action-group { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+    .lobby-divider { color: #64748b; font-size: 0.85rem; font-weight: 600; }
+    .lobby-input {
+      padding: 10px; border-radius: 8px; border: 1px solid #334155;
+      background: #0f172a; color: white; text-align: center; font-size: 1rem;
+    }
+    .lobby-status { font-size: 0.9rem; color: #fbbf24; font-weight: 500; min-height: 1.4em; }
+    .host-btn { background: #2563eb; color: white; }
+    .join-btn { background: #475569; color: white; }
+    .host-config-box {
+      text-align: left; background: #0f172a; padding: 14px; border-radius: 10px;
+      display: flex; flex-direction: column; gap: 10px; width: 100%; border: 1px solid #334155;
+    }
+    .config-heading { font-weight: 700; color: #cbd5e1; font-size: 0.85rem; text-transform: uppercase; }
+    .config-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .config-select { background: #1e293b; color: white; border: 1px solid #475569; padding: 6px; border-radius: 6px; cursor: pointer; }
+    .start-match-btn { background: #22c55e; color: white; margin-top: 6px; }
+    .room-code-display { font-size: 0.9rem; color: #94a3b8; }
+    .room-code-display strong { color: #f8fafc; font-size: 1.2rem; letter-spacing: 0.1em; }
+    .takeback-card { padding: 30px; width: 340px; }
+    .small-title { font-size: 1.4rem; color: #f8fafc; }
+    .takeback-actions { display: flex; gap: 12px; width: 100%; margin-top: 6px; }
+    .approve-btn { background: #22c55e; color: white; }
+    .decline-btn { background: #ef4444; color: white; }
+    .gameover-icon { font-size: 4rem; line-height: 1; filter: drop-shadow(0 0 20px rgba(250,204,21,0.5)); }
+    .gameover-title { font-size: 2.2rem; font-weight: 800; color: #f8fafc; }
+    .gameover-title.win  { color: #4ade80; }
+    .gameover-title.lose { color: #f87171; }
+    .gameover-title.draw { color: #fbbf24; }
+    .gameover-sub { font-size: 1rem; color: #94a3b8; }
+    .hidden { display: none !important; }
+
+    /* Modal styled covers */
+    .confirm-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px);
+      display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Reusable Action Confirmation Modal (for Takeback, Draw, Surrender) -->
+  <div id="actionConfirmOverlay" class="confirm-overlay hidden">
+    <div class="gameover-card takeback-card">
+      <div id="confirmActionTitle" class="small-title">Confirm Action</div>
+      <div id="confirmActionSub" class="gameover-sub">Are you sure you want to perform this action?</div>
+      <div class="takeback-actions">
+        <button id="confirmActionYesBtn" class="gameover-btn approve-btn">Yes</button>
+        <button id="confirmActionNoBtn" class="gameover-btn decline-btn">No</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lobby -->
+  <div id="lobbyOverlay" class="gameover-overlay">
+    <div class="gameover-card lobby-card">
+      <div class="lobby-title">♟ Chess Online</div>
+
+      <div id="lobbyInitialActions" class="lobby-action-group">
+        <button id="hostRoomBtn" class="gameover-btn host-btn">Host a New Match</button>
+        <div class="lobby-divider">— OR —</div>
+        <input type="text" id="joinRoomCodeInput" placeholder="Enter Room ID" class="lobby-input" maxlength="6" />
+        <button id="joinRoomBtn" class="gameover-btn join-btn" style="background-color: rgb(40, 139, 40); color: white;">Join via Code</button>
+        <button onclick="history.back()" class="gameover-btn join-btn" style="background-color: red; color: white;">Go Back</button>
+      </div>
+
+      <div id="lobbyRoomSetup" class="lobby-action-group hidden">
+        <div class="room-code-display">Room ID: <strong id="displayRoomId">—</strong></div>
+        <div id="lobbyStatusText" class="lobby-status">Connecting…</div>
+
+        <div id="hostConfigForm" class="host-config-box hidden">
+          <span class="config-heading">Match Settings</span>
+          <label class="config-row">
+            <span>Your Color:</span>
+            <select id="networkColorSelect" class="config-select">
+              <option value="w">White</option>
+              <option value="b">Black</option>
+            </select>
+          </label>
+          <label class="config-row">
+            <span>Time Control:</span>
+            <select id="networkTimerSelect" class="config-select">
+              <option value="60">1 Minute</option>
+              <option value="180">3 Minutes</option>
+              <option value="300" selected>5 Minutes</option>
+              <option value="600">10 Minutes</option>
+              <option value="900">15 Minutes</option>
+              <option value="1200">20 Minutes</option>
+              <option value="1800">30 Minutes</option>
+              <option value="3600">1 Hour</option>
+              <option value="0">No Limit</option>
+            </select>
+          </label>
+          <button id="networkStartBtn" class="gameover-btn start-match-btn">Start Game</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Takeback Request Prompt (For the Deciding Player) -->
+  <div id="takebackOverlay" class="gameover-overlay hidden">
+    <div class="gameover-card takeback-card">
+      <div class="small-title">Takeback Request</div>
+      <div id="takebackPromptText" class="gameover-sub">Opponent wants to undo their last move. Allow it?</div>
+      <div class="takeback-actions">
+        <button id="approveTakebackBtn" class="gameover-btn approve-btn">Approve</button>
+        <button id="declineTakebackBtn" class="gameover-btn decline-btn">Decline</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Takeback Waiting Overlay with "Cancel Request" Button (For the Requesting Player) -->
+  <div id="takebackWaitingOverlay" class="gameover-overlay hidden">
+    <div class="gameover-card takeback-card">
+      <div class="small-title">Pending Approval</div>
+      <div class="gameover-sub">Waiting for your opponent to decide on your takeback request.</div>
+      <div style="margin-top: 15px; color: #fbbf24; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span>⏳</span> Awaiting decision...
+      </div>
+      <button id="cancelTakebackRequestBtn" class="gameover-btn decline-btn" style="margin-top: 12px;">Cancel Request</button>
+    </div>
+  </div>
+
+  <!-- Draw Offer Prompt (For the Deciding Player) -->
+  <div id="drawOverlay" class="gameover-overlay hidden">
+    <div class="gameover-card takeback-card">
+      <div class="small-title">Draw Offered</div>
+      <div class="gameover-sub">Your opponent has offered a draw. Do you want to accept?</div>
+      <div class="takeback-actions">
+        <button id="approveDrawBtn" class="gameover-btn approve-btn">Accept Draw</button>
+        <button id="declineDrawBtn" class="gameover-btn decline-btn">Decline</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Draw Waiting Overlay with "Cancel Offer" Button (For the Requesting Player) -->
+  <div id="drawWaitingOverlay" class="gameover-overlay hidden">
+    <div class="gameover-card takeback-card">
+      <div class="small-title">Draw Offer Sent</div>
+      <div class="gameover-sub">Waiting for opponent to review your draw offer.</div>
+      <div style="margin-top: 15px; color: #3b82f6; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span>⏳</span> Awaiting response...
+      </div>
+      <button id="cancelDrawRequestBtn" class="gameover-btn decline-btn" style="margin-top: 12px;">Cancel Draw Offer</button>
+    </div>
+  </div>
+
+  <!-- Game Over -->
+  <div id="gameOverOverlay" class="gameover-overlay hidden">
+    <div class="gameover-card">
+      <div id="gameOverIcon"  class="gameover-icon">!</div>
+      <div id="gameOverTitle" class="gameover-title">Game Over</div>
+      <div id="gameOverSub"   class="gameover-sub"></div>
+      <button id="gameOverNewGame" class="gameover-btn">Back to Lobby</button>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="layout">
+    <aside class="sidebar left-panel">
+      <div class="sidebar-section">
+        <h2>Match Info</h2>
+        <div class="controls">
+          <div class="player-choice">
+            <span id="networkRoleLabel" style="font-weight:600;color:#fbbf24;">Not connected</span>
+          </div>
+          <button id="takebackButton" class="takeback-btn" disabled>Takeback</button>
+          <button id="drawButton" class="draw-btn" disabled>Offer Draw</button>
+          <button id="resignButton" class="resign-btn" disabled>Resign</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h2>Timers &amp; Points</h2>
+        <div class="scoreboard">
+          <div class="score-row">
+            <span id="playerScoreLabel">White</span>
+            <span id="playerScoreValue" class="score-val">0</span>
+          </div>
+          <div class="score-row">
+            <span id="opponentScoreLabel">Black</span>
+            <span id="opponentScoreValue" class="score-val">0</span>
+          </div>
+          <div class="timers">
+            <div id="playerTimerItem" class="timer-item">
+              <span id="playerTimerLabel">White Time</span>
+              <span id="playerTimerValue">--:--</span>
+            </div>
+            <div id="opponentTimerItem" class="timer-item">
+              <span id="opponentTimerLabel">Black Time</span>
+              <span id="opponentTimerValue">--:--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="board-main">
+      <div class="board-wrapper">
+        <div id="board" class="board"></div>
+        <div id="gameModeInfo" class="info board-info">Waiting for lobby…</div>
+        <div id="status" class="status">Lobby room initialization pending…</div>
+      </div>
+    </main>
+
+    <aside class="sidebar right-panel">
+      <div class="sidebar-section">
+        <h2>Game Info</h2>
+        <div class="info">
+          <p>Online Multiplayer via Firebase.</p>
+          <p>Interact with pieces only during your active turn.</p>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h2>Move History</h2>
+        <div id="moveHistory" class="move-history">
+          <div class="move-list-empty">No moves played yet</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Chess engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, set, get, update,
+             onValue, off, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // ── Firebase init ──────────────────────────────────────────────────────
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDW9mCX1rqcVS1NvhkN5hxg9BPKns__a14",
+      authDomain:        "chess-dbss.firebaseapp.com",
+      databaseURL:       "https://chess-dbss-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:         "chess-dbss",
+      storageBucket:     "chess-dbss.firebasestorage.app",
+      messagingSenderId: "258412160598",
+      appId:             "1:258412160598:web:c39e009167a55a0ecefdf7",
+      measurementId:     "G-ZLRXZQ1128"
+    };
+    const fbApp = initializeApp(firebaseConfig);
+    const db    = getDatabase(fbApp);
+
+    // ── DOM ────────────────────────────────────────────────────────────────
+    const boardElement         = document.getElementById('board');
+    const statusElement        = document.getElementById('status');
+    const leaveGameButton      = document.getElementById('leaveGameButton');
+    const takebackButton       = document.getElementById('takebackButton');
+    const drawButton           = document.getElementById('drawButton');
+    const resignButton         = document.getElementById('resignButton');
+    const gameModeInfo         = document.getElementById('gameModeInfo');
+    const playerScoreLabel     = document.getElementById('playerScoreLabel');
+    const playerScoreValue     = document.getElementById('playerScoreValue');
+    const opponentScoreLabel   = document.getElementById('opponentScoreLabel');
+    const opponentScoreValue   = document.getElementById('opponentScoreValue');
+    const playerTimerValue     = document.getElementById('playerTimerValue');
+    const opponentTimerValue   = document.getElementById('opponentTimerValue');
+    const playerTimerItem      = document.getElementById('playerTimerItem');
+    const opponentTimerItem    = document.getElementById('opponentTimerItem');
+    const moveHistoryContainer = document.getElementById('moveHistory');
+
+    const gameOverOverlay  = document.getElementById('gameOverOverlay');
+    const gameOverIcon     = document.getElementById('gameOverIcon');
+    const gameOverTitle    = document.getElementById('gameOverTitle');
+    const gameOverSub      = document.getElementById('gameOverSub');
+    const gameOverNewGame  = document.getElementById('gameOverNewGame');
+
+    const lobbyOverlay         = document.getElementById('lobbyOverlay');
+    const lobbyInitialActions  = document.getElementById('lobbyInitialActions');
+    const lobbyRoomSetup       = document.getElementById('lobbyRoomSetup');
+    const displayRoomId        = document.getElementById('displayRoomId');
+    const lobbyStatusText      = document.getElementById('lobbyStatusText');
+    const hostConfigForm       = document.getElementById('hostConfigForm');
+
+    const hostRoomBtn          = document.getElementById('hostRoomBtn');
+    const joinRoomCodeInput    = document.getElementById('joinRoomCodeInput');
+    const joinRoomBtn          = document.getElementById('joinRoomBtn');
+    const networkColorSelect   = document.getElementById('networkColorSelect');
+    const networkTimerSelect   = document.getElementById('networkTimerSelect');
+    const networkStartBtn      = document.getElementById('networkStartBtn');
+    const networkRoleLabel     = document.getElementById('networkRoleLabel');
+
+    // Takeback Overlays
+    const takebackOverlay          = document.getElementById('takebackOverlay');
+    const takebackWaitingOverlay   = document.getElementById('takebackWaitingOverlay');
+    const takebackPromptText       = document.getElementById('takebackPromptText');
+    const approveTakebackBtn       = document.getElementById('approveTakebackBtn');
+    const declineTakebackBtn       = document.getElementById('declineTakebackBtn');
+    const cancelTakebackRequestBtn = document.getElementById('cancelTakebackRequestBtn');
+
+    // Draw Overlays
+    const drawOverlay              = document.getElementById('drawOverlay');
+    const drawWaitingOverlay       = document.getElementById('drawWaitingOverlay');
+    const approveDrawBtn           = document.getElementById('approveDrawBtn');
+    const declineDrawBtn           = document.getElementById('declineDrawBtn');
+    const cancelDrawRequestBtn     = document.getElementById('cancelDrawRequestBtn');
+
+    // Reusable Confirm Action Overlay
+    const actionConfirmOverlay     = document.getElementById('actionConfirmOverlay');
+    const confirmActionTitle       = document.getElementById('confirmActionTitle');
+    const confirmActionSub         = document.getElementById('confirmActionSub');
+    const confirmActionYesBtn      = document.getElementById('confirmActionYesBtn');
+    const confirmActionNoBtn       = document.getElementById('confirmActionNoBtn');
+
+    const confirmOverlay       = document.getElementById('confirmOverlay');
+    const confirmYesBtn        = document.getElementById('confirmYesBtn');
+    const confirmNoBtn         = document.getElementById('confirmNoBtn');
+
+    // ── Piece assets ───────────────────────────────────────────────────────
+    const pieceValues = { p:1, n:3, b:3, r:5, q:9, k:0 };
+    const PIECE_URL = {
+      wK:'https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg',
+      wQ:'https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg',
+      wR:'https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg',
+      wB:'https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg',
+      wN:'https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg',
+      wP:'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg',
+      bK:'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg',
+      bQ:'https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg',
+      bR:'https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg',
+      bB:'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg',
+      bN:'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg',
+      bP:'https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg',
+    };
+
+    // ── Game state ─────────────────────────────────────────────────────────
+    const game = new Chess();
+    let selectedSquare = null;
+    let legalSquares   = [];
+    let gameStarted    = false;
+    let networkRole    = null;   // 'host' | 'guest'
+    let localColor     = 'w';
+    let roomId         = null;
+    let activeListeners = [];    // track Firebase unsubscribe functions for cleanup
+    let isCleaningUp   = false;
+
+    let selectedTimerSeconds = 300;
+    let boardScore   = { white: 0, black: 0 };
+    let timerValues  = { white: 300, black: 300 };
+    let activeTimerSide = null;
+    let timerInterval   = null;
+
+    // Tracker for reusable confirmation actions: 'takeback' | 'draw' | 'resign'
+    let pendingConfirmAction = null;
+
+    // ── Toast Notifications ────────────────────────────────────────────────
+    function showToast(message, duration = 3000) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      const container = document.getElementById('toastContainer');
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function genRoomId() {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    function roomRef(path)  { return ref(db, `rooms/${roomId}/${path}`); }
+    function signalRef(sig) { return ref(db, `rooms/${roomId}/signals/${sig}`); }
+
+    function listenOnce(fbRef, callback) {
+      // Use a single get() for one-time reads to avoid registering persistent listeners
+      get(fbRef).then(snap => { if (snap.exists()) callback(snap.val()); }).catch(() => {});
+    }
+
+    function listenOn(fbRef, callback) {
+      // Register a persistent listener and store the unsubscribe function for cleanup
+      const unsub = onValue(fbRef, (snap) => { callback(snap.exists() ? snap.val() : null); });
+      activeListeners.push(unsub);
+      return unsub;
+    }
+
+    function setupOnDisconnectCleanup() {
+      if (!roomId) return;
+      try {
+        onDisconnect(ref(db, `rooms/${roomId}`)).remove();
+      } catch (err) {
+        console.warn('Failed to register onDisconnect cleanup:', err);
+      }
+    }
+
+    // Remove only the current room entry under rooms, and ensure the rooms root stays present as an empty object if no rooms remain.
+    async function cleanServerStorage() {
+      if (!roomId || isCleaningUp) return;
+      isCleaningUp = true;
+      try {
+        // First remove any active listeners to avoid race conditions
+        cleanupListeners();
+        await remove(ref(db, `rooms/${roomId}`));
+
+        const roomsSnap = await get(ref(db, 'rooms'));
+        if (!roomsSnap.exists()) {
+          await set(ref(db, 'rooms'), {});
+        }
+      } catch (err) {
+        console.warn("Storage cleanup failed:", err);
+      }
+    }
+
+    function cleanupListeners() {
+      // activeListeners stores unsubscribe functions returned by onValue
+      activeListeners.forEach(unsub => {
+        try { if (typeof unsub === 'function') unsub(); }
+        catch (e) { /* ignore errors during detach */ }
+      });
+      activeListeners = [];
+    }
+
+    // ── Overlays ───────────────────────────────────────────────────────────
+    function showGameOver(type, title, sub) {
+      stopTimer();
+      const icons = { win:'♛', lose:'♟', draw:'½' };
+      gameOverIcon.textContent  = icons[type] || '!';
+      gameOverTitle.textContent = title;
+      gameOverTitle.className   = `gameover-title ${type}`;
+      gameOverSub.textContent   = sub || '';
+      gameOverOverlay.classList.remove('hidden');
+
+      // Clear server database entry now that the match has officially finished
+      cleanServerStorage();
+    }
+
+    gameOverNewGame.addEventListener('click', () => {
+      cleanupListeners();
+      window.location.reload();
+    });
+
+    // ── Clock ──────────────────────────────────────────────────────────────
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+
+    function formatTime(s) {
+      if (selectedTimerSeconds === 0) return '∞';
+      return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    }
+
+    function updateTimerDisplay() {
+      playerTimerValue.textContent   = formatTime(timerValues.white);
+      opponentTimerValue.textContent = formatTime(timerValues.black);
+      playerTimerItem.classList.toggle('active', activeTimerSide === 'white');
+      opponentTimerItem.classList.toggle('active', activeTimerSide === 'black');
+    }
+
+    function endByTimeout(loserSide) {
+      stopTimer();
+      const isWhite = loserSide === 'white';
+      statusElement.textContent = isWhite ? 'Black wins on time.' : 'White wins on time.';
+      showGameOver(localColor === (isWhite ? 'w' : 'b') ? 'lose' : 'win',
+        isWhite ? 'Black Wins!' : 'White Wins!', 'Time expired');
+    }
+
+    function tickTimer() {
+      if (!activeTimerSide || selectedTimerSeconds === 0) return;
+      if (timerValues[activeTimerSide] <= 0) { endByTimeout(activeTimerSide); return; }
+      timerValues[activeTimerSide] -= 1;
+      updateTimerDisplay();
+    }
+
+    function startTimerForCurrentTurn() {
+      if (!gameStarted) return;
+      activeTimerSide = game.turn() === 'w' ? 'white' : 'black';
+      stopTimer();
+      if (selectedTimerSeconds !== 0) timerInterval = setInterval(tickTimer, 1000);
+      updateTimerDisplay();
+    }
+
+    // ── Scoreboard / history / buttons ─────────────────────────────────────
+    function updateScoreboard() {
+      playerScoreValue.textContent   = boardScore.white;
+      opponentScoreValue.textContent = boardScore.black;
+      if (localColor === 'w') {
+        playerScoreLabel.textContent   = 'White (You)';
+        opponentScoreLabel.textContent = 'Black (Opponent)';
+      } else {
+        playerScoreLabel.textContent   = 'White (Opponent)';
+        opponentScoreLabel.textContent = 'Black (You)';
+      }
+    }
+
+    function updateTakebackButton() {
+      // Re-enable takeback button if:
+      // 1. Match is active
+      // 2. It is not our turn (we can only request takeback after we play, during opponent's turn)
+      // 3. There is at least 1 move on the board
+      takebackButton.disabled = !(gameStarted && game.turn() !== localColor && game.history().length >= 1);
+    }
+
+    function updateDrawAndResignButtons() {
+      // Enable draw/resign option once the game starts
+      drawButton.disabled = !gameStarted;
+      resignButton.disabled = !gameStarted;
+    }
+
+    function updateMoveHistory() {
+      const history = game.history();
+      if (!history.length) {
+        moveHistoryContainer.innerHTML = '<div class="move-list-empty">No moves played yet</div>';
+        return;
+      }
+      let html = `<div class="move-list">
+        <div class="move-list-header">#</div>
+        <div class="move-list-header">White</div>
+        <div class="move-list-header">Black</div>`;
+      for (let i = 0; i < history.length; i += 2) {
+        html += `<div class="move-num">${Math.floor(i/2)+1}.</div>
+                 <div class="move-notation">${history[i]}</div>
+                 <div class="move-notation">${history[i+1]||''}</div>`;
+      }
+      moveHistoryContainer.innerHTML = html + '</div>';
+      moveHistoryContainer.scrollTop = moveHistoryContainer.scrollHeight;
+    }
+
+    // ── Board rendering ────────────────────────────────────────────────────
+    function createBoard() {
+      boardElement.innerHTML = '';
+      const files = ['a','b','c','d','e','f','g','h'];
+      const rs = localColor==='w'?8:1, re = localColor==='w'?1:8, rstep = localColor==='w'?-1:1;
+      const fs = localColor==='w'?0:7, fe = localColor==='w'?8:-1, fstep = localColor==='w'?1:-1;
+      for (let rank=rs; rank!==re+rstep; rank+=rstep) {
+        for (let file=fs; file!==fe; file+=fstep) {
+          const name = `${files[file]}${rank}`;
+          const sq   = document.createElement('button');
+          sq.type    = 'button';
+          sq.className = `square ${(file+rank)%2===0?'dark':'light'}`;
+          sq.dataset.square = name;
+          sq.addEventListener('click', () => handleSquareClick(name));
+          boardElement.appendChild(sq);
+        }
+      }
+    }
+
+    function renderBoard() {
+      const board = game.board();
+      document.querySelectorAll('.square').forEach(el => {
+        const name  = el.dataset.square;
+        const file  = name.charCodeAt(0) - 97;
+        const rank  = 8 - parseInt(name[1], 10);
+        const piece = board[rank][file];
+        el.innerHTML = piece
+          ? `<img class="piece" src="${PIECE_URL[piece.color+piece.type.toUpperCase()]}" alt="">`
+          : '';
+        el.classList.toggle('selected', selectedSquare === name);
+        el.classList.toggle('legal',    legalSquares.includes(name));
+      });
+
+      if (!gameStarted) {
+        statusElement.textContent = 'Waiting for game to start…';
+      } else if (game.in_checkmate()) {
+        const whiteWon = game.turn() === 'b';
+        statusElement.textContent = whiteWon ? 'Checkmate! White wins.' : 'Checkmate! Black wins.';
+        showGameOver(localColor===(whiteWon?'w':'b')?'win':'lose', whiteWon?'White Wins!':'Black Wins!', 'Checkmate');
+      } else if (game.in_draw()) {
+        statusElement.textContent = 'Draw!';
+        showGameOver('draw', "It's a Draw!", 'Stalemate / Insufficient Material');
+      } else {
+        statusElement.textContent = game.turn()===localColor
+          ? `Your Turn (${localColor==='w'?'White':'Black'})`
+          : 'Waiting for Opponent…';
+        if (game.in_check()) statusElement.textContent += ' — Check!';
+      }
+      updateTakebackButton();
+      updateDrawAndResignButtons();
+    }
+
+    // ── Input handling ─────────────────────────────────────────────────────
+    function handleSquareClick(square) {
+      if (!gameStarted || game.turn() !== localColor) return;
+      const piece = game.get(square);
+
+      if (selectedSquare && legalSquares.includes(square)) {
+        const move = game.move({ from: selectedSquare, to: square, promotion: 'q' });
+        if (move) {
+          if (move.captured) {
+            const pts = pieceValues[move.captured.toLowerCase()] || 0;
+            if (move.color==='w') boardScore.white += pts; else boardScore.black += pts;
+          }
+          // Push move to Firebase and include PGN for move history sync
+          update(roomRef('game'), {
+            fen: game.fen(),
+            nextTurn: game.turn(),
+            lastMoveObj: JSON.stringify(move),
+            score: boardScore,
+            pgn: game.pgn()
+          });
+        }
+        selectedSquare = null; legalSquares = [];
+        renderBoard(); updateScoreboard(); updateMoveHistory(); startTimerForCurrentTurn();
+        return;
+      }
+
+      if (piece && piece.color === localColor) {
+        selectedSquare = square;
+        legalSquares   = game.moves({ square, verbose: true }).map(m => m.to);
+      } else { selectedSquare = null; legalSquares = []; }
+      renderBoard();
+    }
+
+    // ── Game start (both players call this) ────────────────────────────────
+    function initGame(config) {
+      localColor = networkRole === 'host' ? config.hostColor : (config.hostColor==='w'?'b':'w');
+      gameModeInfo.textContent = `Firebase Match · Playing as ${localColor==='w'?'White':'Black'}`;
+      lobbyOverlay.classList.add('hidden');
+      selectedTimerSeconds = config.timerSeconds;
+      timerValues = { white: config.timerSeconds, black: config.timerSeconds };
+      gameStarted = true;
+      createBoard(); renderBoard(); updateScoreboard(); updateMoveHistory(); startTimerForCurrentTurn();
+
+      // Listen for opponent moves or structural board updates (e.g. FEN changes, undoes)
+      listenOn(roomRef('game'), (data) => {
+        if (!data) return;
+
+        // Load the new engine state and scores instantly
+        if (data.pgn && data.pgn !== game.pgn() && typeof game.load_pgn === 'function') {
+          game.load_pgn(data.pgn);
+        } else if (data.fen && data.fen !== game.fen()) {
+          game.load(data.fen);
+        }
+
+        if (data.score) {
+          boardScore = data.score;
+        } else if (data.lastMoveObj) {
+          const m = JSON.parse(data.lastMoveObj);
+          if (m.captured) {
+            const pts = pieceValues[m.captured.toLowerCase()] || 0;
+            if (data.nextTurn==='w') boardScore.white += pts; else boardScore.black += pts;
+          }
+        }
+        renderBoard(); updateScoreboard(); updateMoveHistory(); startTimerForCurrentTurn();
+      });
+
+      // Listen for takeback requests
+      listenOn(signalRef('takebackRequest'), (val) => {
+        // ONLY show the prompt to the decider (the user who did NOT request it)
+        if (val && val !== localColor) {
+          takebackPromptText.textContent = 'Opponent requests a takeback. Allow it?';
+          takebackOverlay.classList.remove('hidden');
+        } else if (!val) {
+          // If the requester cancelled, instantly hide the prompt on decider's screen
+          takebackOverlay.classList.add('hidden');
+        }
+      });
+
+      // Listen for takeback responses
+      listenOn(signalRef('takebackResponse'), (val) => {
+        if (!val) return;
+        
+        // Hide both overlays regardless of decision
+        takebackOverlay.classList.add('hidden');
+        takebackWaitingOverlay.classList.add('hidden');
+        
+        if (val === 'approved') {
+          showToast('Takeback request approved!');
+          applyTakebackLocally();
+          set(signalRef('takebackResponse'), null);
+          set(signalRef('takebackRequest'),  null);
+        } else if (val === 'declined') {
+          showToast('Your takeback request was declined.');
+          updateTakebackButton();
+          set(signalRef('takebackResponse'), null);
+          set(signalRef('takebackRequest'),  null);
+        }
+      });
+
+      // Listen for draw requests
+      listenOn(signalRef('drawRequest'), (val) => {
+        if (val && val !== localColor) {
+          drawOverlay.classList.remove('hidden');
+        } else if (!val) {
+          // Instantly close decider's screen if offer was withdrawn (moodswing)
+          drawOverlay.classList.add('hidden');
+        }
+      });
+
+      // Listen for draw responses
+      listenOn(signalRef('drawResponse'), (val) => {
+        if (!val) return;
+
+        drawOverlay.classList.add('hidden');
+        drawWaitingOverlay.classList.add('hidden');
+
+        if (val === 'approved') {
+          showToast('The draw offer was accepted!');
+          set(signalRef('drawResponse'), null);
+          set(signalRef('drawRequest'),  null);
+          showGameOver('draw', "Match Drawn!", "Players agreed to a draw.");
+        } else if (val === 'declined') {
+          showToast('Your draw offer was declined.');
+          set(signalRef('drawResponse'), null);
+          set(signalRef('drawRequest'),  null);
+        }
+      });
+
+      // Listen for Resignation / Surrender signals
+      listenOn(signalRef('resignSignal'), (val) => {
+        if (val && val !== localColor) {
+          stopTimer();
+          const opposingTeam = val === 'w' ? 'White' : 'Black';
+          const playerTeamColor = localColor === 'w' ? 'white' : 'black';
+          
+          showGameOver('win', `${localColor === 'w' ? 'White' : 'Black'} Wins!`, `${opposingTeam} surrendered the match.`);
+        }
+      });
+
+      // Listen for disconnect signal
+      listenOn(signalRef('disconnect'), (val) => {
+        if (val === 1) { 
+          stopTimer(); 
+          showGameOver('draw', 'Match Over', 'Opponent disconnected.'); 
+        }
+      });
+    }
+
+    // Instantly rewinds the local game and sends the update to Firebase
+    function applyTakebackLocally() {
+      const undone = game.undo();
+      if (undone) {
+        if (undone.captured) {
+          const pts = pieceValues[undone.captured.toLowerCase()] || 0;
+          if (undone.color==='w') boardScore.white = Math.max(0, boardScore.white - pts);
+          else                     boardScore.black = Math.max(0, boardScore.black - pts);
+        }
+        
+        update(roomRef('game'), {
+          fen: game.fen(),
+          nextTurn: game.turn(),
+          lastMoveObj: null,
+          score: boardScore,
+          pgn: game.pgn()
+        });
+      }
+      selectedSquare = null; legalSquares = [];
+      renderBoard(); updateScoreboard(); updateMoveHistory(); startTimerForCurrentTurn();
+    }
+
+    // ── Host flow ──────────────────────────────────────────────────────────
+    hostRoomBtn.addEventListener('click', async () => {
+      hostRoomBtn.disabled = true;
+      roomId = genRoomId();
+      networkRole = 'host';
+
+      // Write room skeleton
+      await set(ref(db, `rooms/${roomId}`), {
+        host:   'waiting',
+        guest:  'waiting',
+        status: 'lobby',
+        game:   { fen: new Chess().fen(), nextTurn: 'w', score: { white: 0, black: 0 }, pgn: '' },
+        signals: {}
+      });
+
+      displayRoomId.textContent = roomId;
+      lobbyInitialActions.classList.add('hidden');
+      lobbyRoomSetup.classList.remove('hidden');
+      lobbyStatusText.textContent = 'Waiting for opponent to join…';
+      networkRoleLabel.textContent = 'Role: Host (P1)';
+      setupOnDisconnectCleanup();
+
+      // Wait for guest to join (persistent listener so host updates when guest arrives)
+      listenOn(roomRef('guest'), (val) => {
+        if (val && val !== 'waiting') {
+          lobbyStatusText.textContent = 'Opponent joined! Configure match settings:';
+          hostConfigForm.classList.remove('hidden');
+        }
+      });
+    });
+
+    // ── Start game (host) ──────────────────────────────────────────────────
+    networkStartBtn.addEventListener('click', async () => {
+      if (networkRole !== 'host') return;
+      networkStartBtn.disabled = true;
+      const config = {
+        hostColor:    networkColorSelect.value,
+        timerSeconds: parseInt(networkTimerSelect.value, 10)
+      };
+      await update(ref(db, `rooms/${roomId}`), { status: 'started', config });
+      initGame(config);
+    });
+
+    // ── Guest flow ─────────────────────────────────────────────────────────
+    joinRoomBtn.addEventListener('click', async () => {
+      const code = joinRoomCodeInput.value.trim().toUpperCase();
+      if (!code) {
+        showToast('Please enter a Room ID.');
+        return;
+      }
+      joinRoomBtn.disabled = true;
+
+      const snap = await get(ref(db, `rooms/${code}`));
+      if (!snap.exists()) {
+        showToast('Room not found. Check the ID and try again.');
+        joinRoomBtn.disabled = false;
+        return;
+      }
+      const roomData = snap.val();
+      if (roomData.guest !== 'waiting') {
+        showToast('Room is full.');
+        joinRoomBtn.disabled = false;
+        return;
+      }
+
+      roomId = code;
+      networkRole = 'guest';
+      // Mark guest as joined
+      await set(roomRef('guest'), 'joined');
+      setupOnDisconnectCleanup();
+
+      displayRoomId.textContent = roomId;
+      lobbyInitialActions.classList.add('hidden');
+      lobbyRoomSetup.classList.remove('hidden');
+      lobbyStatusText.textContent = 'Connected! Waiting for host to start…';
+      networkRoleLabel.textContent = 'Role: Guest (P2)';
+
+      // Wait for host to start (persistent listener to catch start event)
+      listenOn(roomRef('status'), (val) => {
+        if (val === 'started') {
+          get(roomRef('config')).then(s => { if (s.exists()) initGame(s.val()); });
+        }
+      });
+    });
+
+    // ── Confirmation Modal Handlers (Takeback, Resign, Draw) ────────────────
+    function openActionConfirm(actionType) {
+      pendingConfirmAction = actionType;
+      actionConfirmOverlay.classList.remove('hidden');
+
+      if (actionType === 'takeback') {
+        confirmActionTitle.textContent = "Takeback Request";
+        confirmActionSub.textContent = "Do you really want to request a takeback?";
+      } else if (actionType === 'draw') {
+        confirmActionTitle.textContent = "Offer Draw";
+        confirmActionSub.textContent = "Do you really want to offer a draw?";
+      } else if (actionType === 'resign') {
+        confirmActionTitle.textContent = "Resign Game";
+        confirmActionSub.textContent = "Do you really want to surrender?";
+      }
+    }
+
+    confirmActionNoBtn.addEventListener('click', () => {
+      actionConfirmOverlay.classList.add('hidden');
+      pendingConfirmAction = null;
+    });
+
+    confirmActionYesBtn.addEventListener('click', () => {
+      actionConfirmOverlay.classList.add('hidden');
+      const action = pendingConfirmAction;
+      pendingConfirmAction = null;
+
+      if (action === 'takeback') {
+        executeTakebackRequest();
+      } else if (action === 'draw') {
+        executeDrawRequest();
+      } else if (action === 'resign') {
+        executeResignAction();
+      }
+    });
+
+    // ── Takeback Action Execution ──────────────────────────────────────────
+    takebackButton.addEventListener('click', () => {
+      openActionConfirm('takeback');
+    });
+
+    function executeTakebackRequest() {
+      set(signalRef('takebackRequest'), localColor);
+      statusElement.textContent = 'Takeback request sent…';
+      takebackButton.disabled = true;
+      takebackWaitingOverlay.classList.remove('hidden');
+    }
+
+    // Cancel Request (Moodswing cancel before decision)
+    cancelTakebackRequestBtn.addEventListener('click', () => {
+      set(signalRef('takebackRequest'), null);
+      takebackWaitingOverlay.classList.add('hidden');
+      showToast('Takeback request canceled.');
+      updateTakebackButton();
+    });
+
+    approveTakebackBtn.addEventListener('click', () => {
+      takebackOverlay.classList.add('hidden');
+      set(signalRef('takebackResponse'), 'approved');
+    });
+
+    declineTakebackBtn.addEventListener('click', () => {
+      takebackOverlay.classList.add('hidden');
+      set(signalRef('takebackResponse'), 'declined');
+    });
+
+    // ── Draw Action Execution ──────────────────────────────────────────────
+    drawButton.addEventListener('click', () => {
+      openActionConfirm('draw');
+    });
+
+    function executeDrawRequest() {
+      set(signalRef('drawRequest'), localColor);
+      drawWaitingOverlay.classList.remove('hidden');
+    }
+
+    // Cancel Draw Offer (Moodswing cancel before decision)
+    cancelDrawRequestBtn.addEventListener('click', () => {
+      set(signalRef('drawRequest'), null);
+      drawWaitingOverlay.classList.add('hidden');
+      showToast('Draw offer canceled.');
+    });
+
+    approveDrawBtn.addEventListener('click', () => {
+      drawOverlay.classList.add('hidden');
+      set(signalRef('drawResponse'), 'approved');
+    });
+
+    declineDrawBtn.addEventListener('click', () => {
+      drawOverlay.classList.add('hidden');
+      set(signalRef('drawResponse'), 'declined');
+    });
+
+    // ── Resign / Surrender Action Execution ────────────────────────────────
+    resignButton.addEventListener('click', () => {
+      openActionConfirm('resign');
+    });
+
+    function executeResignAction() {
+      set(signalRef('resignSignal'), localColor);
+      stopTimer();
+      showGameOver('lose', "You Resigned", "You surrendered the match.");
+    }
+
+    // ── Leave Match (Using styled Confirm Modal instead of alert/confirm) ──
+    leaveGameButton.addEventListener('click', () => {
+      confirmOverlay.classList.remove('hidden');
+    });
+
+    confirmNoBtn.addEventListener('click', () => {
+      confirmOverlay.classList.add('hidden');
+    });
+
+    confirmYesBtn.addEventListener('click', async () => {
+      confirmOverlay.classList.add('hidden');
+      stopTimer();
+      cleanupListeners();
+      if (roomId) {
+        try {
+          await set(signalRef('disconnect'), 1);
+        } catch(e) {}
+        await cleanServerStorage();
+      }
+      window.location.reload();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (roomId) {
+        // best-effort: signal disconnect and remove the current room entry
+        try { set(signalRef('disconnect'), 1); } catch(e) {}
+        try { cleanupListeners(); } catch(e) {}
+        // can't reliably await in beforeunload; attempt non-blocking remove
+        remove(ref(db, `rooms/${roomId}`)).catch(() => {});
+      }
+    });
+
+  </script>
+</body>
+</html>

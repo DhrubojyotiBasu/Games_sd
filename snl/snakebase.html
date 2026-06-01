@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serpent Ascent — Snake & Ladders Arena</title>
+
+  <style>
+    :root {
+      --bg-color: #060911;
+      --card-bg: #111827;
+      --border: rgba(255, 255, 255, 0.08);
+      --cyan: #00e5ff;
+      --amber: #d97706;
+      --violet: #8b5cf6;
+      --text: #ffffff;
+      --desc: #94a3b8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background-image: radial-gradient(circle at 50% 20%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background-color: #020617;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-group { display: flex; align-items: center; gap: 0.75rem; }
+    .logo-title { font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; color: #fbbf24; }
+    .logo-sub   { font-size: 0.55rem; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; }
+
+    .snakebase-hero {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .snake-icon {
+      font-size: 5rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.4));
+      animation: floatIcon 3s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    main { max-width: 1000px; margin: 0 auto; padding: 3rem 1.5rem; width: 100%; }
+
+    .hero { text-align: center; margin-bottom: 3rem; }
+    .hero h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; color: #fbbf24; }
+    .hero p { color: var(--desc); font-size: 0.9rem; max-width: 500px; margin: 0 auto; }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .game-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .game-card:hover { transform: translateY(-8px); }
+    .card-cyan:hover   { border-color: var(--cyan);   box-shadow: 0 10px 20px rgba(0, 229, 255, 0.1); }
+    .card-amber:hover  { border-color: var(--amber);  box-shadow: 0 10px 20px rgba(217, 119, 6, 0.1); }
+    .card-violet:hover { border-color: var(--violet); box-shadow: 0 10px 20px rgba(139, 92, 246, 0.1); }
+
+    .card-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1rem; font-size: 1.5rem;
+    }
+    .card-cyan .card-icon   { background-color: rgba(0, 229, 255, 0.1); }
+    .card-amber .card-icon  { background-color: rgba(217, 119, 6, 0.1); }
+    .card-violet .card-icon { background-color: rgba(139, 92, 246, 0.1); }
+
+    .card-tag {
+      font-size: 0.65rem; text-transform: uppercase;
+      letter-spacing: 2px; font-weight: bold; margin-bottom: 0.25rem;
+    }
+    .card-cyan .card-tag   { color: var(--cyan); }
+    .card-amber .card-tag  { color: var(--amber); }
+    .card-violet .card-tag { color: var(--violet); }
+
+    .game-title { font-size: 1.35rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .game-desc  { color: var(--desc); font-size: 0.85rem; margin-bottom: 2rem; line-height: 1.5; }
+
+    .play-btn {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: #020617;
+      transition: opacity 0.2s ease;
+      font-family: sans-serif;
+    }
+    .play-btn:hover { opacity: 0.9; }
+    .btn-cyan   { background-color: var(--cyan); }
+    .btn-amber  { background-color: var(--amber); color: white; }
+    .btn-violet { background-color: var(--violet); color: white; }
+
+    .tip-box {
+      border: 1px solid var(--border);
+      background-color: rgba(2, 6, 23, 0.2);
+      padding: 1rem; border-radius: 12px;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .tip-icon {
+      background-color: rgba(217, 119, 6, 0.1);
+      color: var(--amber); padding: 0.5rem; border-radius: 8px; display: flex;
+    }
+    .tip-content h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--amber); letter-spacing: 1px; }
+    .tip-content p  { font-size: 0.75rem; color: var(--desc); margin-top: 0.1rem; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      background-color: #020617;
+      padding: 1rem; text-align: center;
+      font-size: 0.75rem; color: #4b5563;
+    }
+
+    @media (max-width: 640px) {
+      header { padding: 1rem; }
+      .hero h1 { font-size: 2rem; }
+      .tip-box { flex-direction: column; text-align: center; }
+    }
+
+    .back{
+      border: none; 
+      margin-left: -10px;
+      margin-right: 10px; 
+      font-size:20px; 
+      padding:10px 14px; 
+      background-color: rgb(224, 17, 17); 
+      border-radius: 100%;
+      cursor: pointer;
+      color: white;
+    }
+    .back:hover { transform: translateY(-4px); box-shadow: 0 0px 20px rgba(237, 125, 125, 0.5); }
+
+    /* --- MODAL DIALOGUE STYLING --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background-color: var(--card-bg);
+      border: 1px solid var(--cyan);
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 540px;
+      padding: 2rem;
+      position: relative;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      background: none; border: none;
+      color: var(--desc); font-size: 1.5rem;
+      cursor: pointer; transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--cyan); }
+
+    .modal-header { margin-bottom: 1.25rem; }
+    .modal-tag {
+      font-size: 0.65rem; text-transform: uppercase;
+      letter-spacing: 2px; font-weight: bold; color: var(--cyan);
+      margin-bottom: 0.25rem;
+    }
+    .modal-title { font-size: 1.35rem; font-weight: bold; }
+
+    /* Aspect ratio matched for 1:1 square game boards */
+    .slider-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background-color: rgba(0,0,0,0.3);
+    }
+
+    .slider-wrapper {
+      display: flex;
+      width: 100%; height: 100%;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .slide-img {
+      min-width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .slider-arrow {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      background-color: rgba(2, 6, 23, 0.8);
+      border: 1px solid var(--border);
+      color: white; width: 40px; height: 40px;
+      border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1.2rem;
+      transition: all 0.2s;
+      user-select: none;
+      z-index: 10;
+    }
+    .slider-arrow:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    }
+    .arrow-left { left: 12px; }
+    .arrow-right { right: 12px; }
+
+    .slider-dots {
+      display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem;
+    }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background-color: rgba(255,255,255,0.2);
+      cursor: pointer; transition: background-color 0.2s;
+    }
+    .dot.active { background-color: var(--cyan); }
+
+    .modal-footer {
+      margin-top: 1.5rem;
+      display: flex; justify-content: flex-end;
+    }
+    .modal-start-btn {
+      padding: 0.75rem 2rem;
+      border-radius: 8px; font-weight: bold;
+      border: none; cursor: pointer;
+      background-color: var(--cyan); color: #020617;
+      transition: opacity 0.2s;
+    }
+    .modal-start-btn:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-group">
+      <h2 class="logo-title">SERPENT ASCENT</h2>
+      <div>
+        <p class="logo-sub">Snake &amp; Ladders Arena</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+      <button onclick="history.back()" class="back">&#8617</button>
+    </div>
+
+    <div class="snakebase-hero">
+      <span class="snake-icon">🐍</span>
+    </div>
+
+    <div class="hero">
+      <h1>CHOOSE YOUR BATTLE</h1>
+      <p>Roll the dice, dodge the serpents, climb the ladders. Play solo against the computer, challenge a friend locally, or battle champions online.</p>
+    </div>
+
+    <div class="game-grid">
+      <!-- Card 1: vs Computer -->
+      <div class="game-card card-cyan">
+        <div>
+          <div class="card-icon">💻</div>
+          <p class="card-tag">Solo PvE</p>
+          <h3 class="game-title">vs Computer</h3>
+          <p class="game-desc">Face off against the machine. Roll your dice and outmaneuver the computer to reach square 100 first.</p>
+        </div>
+        <button onclick="openModal()" class="play-btn btn-cyan">▶ Play Now</button>
+      </div>
+
+      <!-- Card 2: Local PvP -->
+      <div class="game-card card-amber">
+        <div>
+          <div class="card-icon">🏆</div>
+          <p class="card-tag">Local PvP</p>
+          <h3 class="game-title">Play Offline</h3>
+          <p class="game-desc">Pass &amp; Play on the same device. Two players take turns rolling the dice in a classic local showdown.</p>
+        </div>
+        <button onclick="openPVPModal()" class="play-btn btn-amber">▶ Play Now</button>
+      </div>
+
+      <!-- Card 3: Online -->
+      <div class="game-card card-violet">
+        <div>
+          <div class="card-icon">🌐</div>
+          <p class="card-tag">Global</p>
+          <h3 class="game-title">Online Duel</h3>
+          <p class="game-desc">Matchmaking on dynamic global servers. Battle real-world challengers and climb the leaderboard rankings.</p>
+        </div>
+        <button class="play-btn btn-violet" onclick="window.location.href='index3.html'">▶ Play Now</button>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-icon">💡</div>
+      <div class="tip-content">
+        <h4>Snake &amp; Ladders Insight</h4>
+        <p>"Roll a 1 to enter the board. First to reach exactly square 100 wins — no going over!"</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- DIALOGUE SLIDER BOX MODAL -->
+  <div class="modal-overlay" id="pveModal" onclick="closeModalOnOverlay(event, 'pve')">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closePveModal()">&times;</button>
+      
+      <div class="modal-header">
+        <p class="modal-tag">Solo PvE Setup</p>
+        <h3 class="modal-title">Select Arena Board</h3>
+      </div>
+
+      <div class="slider-container">
+        <div class="slider-wrapper" id="pveSliderWrapper">
+          <img class="slide-img" src="asset/Board1.png" alt="Classic Grid Arena">
+          <img class="slide-img" src="asset/Board2.jpeg" alt="Emerald Forest Arena">
+          <img class="slide-img" src="asset/Board3.jpeg" alt="Cyber Grid Arena">
+        </div>
+        
+        <div class="slider-arrow arrow-left" onclick="moveSlide(-1, 'pve')">&#10094;</div>
+        <div class="slider-arrow arrow-right" onclick="moveSlide(1, 'pve')">&#10095;</div>
+      </div>
+
+      <div class="slider-dots">
+        <div class="dot pve-dot active" onclick="setSlide(0, 'pve')"></div>
+        <div class="dot pve-dot" onclick="setSlide(1, 'pve')"></div>
+        <div class="dot pve-dot" onclick="setSlide(2, 'pve')"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-start-btn" onclick="launchBattle()">Launch Battle</button>
+      </div>
+    </div>
+  </div>
+  <!-- DIALOGUE SLIDER BOX MODAL -->
+  <div class="modal-overlay" id="pvpModal" onclick="closeModalOnOverlay(event, 'pvp')">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closePvpModal()">&times;</button>
+      
+      <div class="modal-header">
+        <p class="modal-tag">Local PvP Setup</p>
+        <h3 class="modal-title">Select Arena Board</h3>
+      </div>
+
+      <div class="slider-container">
+        <div class="slider-wrapper" id="pvpSliderWrapper">
+          <img class="slide-img" src="asset/Board1.png" alt="Classic Grid Arena">
+          <img class="slide-img" src="asset/Board2.jpeg" alt="Emerald Forest Arena">
+          <img class="slide-img" src="asset/Board3.jpeg" alt="Cyber Grid Arena">
+        </div>
+        
+        <div class="slider-arrow arrow-left" onclick="moveSlide(-1, 'pvp')">&#10094;</div>
+        <div class="slider-arrow arrow-right" onclick="moveSlide(1, 'pvp')">&#10095;</div>
+      </div>
+
+      <div class="slider-dots">
+        <div class="dot pvp-dot active" onclick="setSlide(0, 'pvp')"></div>
+        <div class="dot pvp-dot" onclick="setSlide(1, 'pvp')"></div>
+        <div class="dot pvp-dot" onclick="setSlide(2, 'pvp')"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="modal-start-btn" onclick="launchPvP()">Launch Battle</button>
+      </div>
+    </div>
+  </div>
+  <footer>
+    &copy; 2026 Satranch · Snake &amp; Ladders Arena
+  </footer>
+
+  <script>
+    const pveModal = document.getElementById('pveModal');
+    const pvpModal = document.getElementById('pvpModal');
+    const pveSliderWrapper = document.getElementById('pveSliderWrapper');
+    const pvpSliderWrapper = document.getElementById('pvpSliderWrapper');
+    const pveDots = pveModal.querySelectorAll('.pve-dot');
+    const pvpDots = pvpModal.querySelectorAll('.pvp-dot');
+    
+    let pveCurrentSlide = 0;
+    let pvpCurrentSlide = 0;
+    const pveTotalSlides = pveDots.length;
+    const pvpTotalSlides = pvpDots.length;
+
+    function openModal() {
+      pveModal.classList.add('active');
+      updateSliderPosition('pve');
+    }
+
+    function openPVPModal() {
+      pvpModal.classList.add('active');
+      updateSliderPosition('pvp');
+    }
+
+    function closePveModal() {
+      pveModal.classList.remove('active');
+    }
+
+    function closePvpModal() {
+      pvpModal.classList.remove('active');
+    }
+
+    function closeModalOnOverlay(e, type) {
+      if (type === 'pve' && e.target === pveModal) {
+        closePveModal();
+      }
+      if (type === 'pvp' && e.target === pvpModal) {
+        closePvpModal();
+      }
+    }
+
+    function moveSlide(direction, type) {
+      if (type === 'pve') {
+        pveCurrentSlide += direction;
+        if (pveCurrentSlide >= pveTotalSlides) pveCurrentSlide = 0;
+        if (pveCurrentSlide < 0) pveCurrentSlide = pveTotalSlides - 1;
+      } else {
+        pvpCurrentSlide += direction;
+        if (pvpCurrentSlide >= pvpTotalSlides) pvpCurrentSlide = 0;
+        if (pvpCurrentSlide < 0) pvpCurrentSlide = pvpTotalSlides - 1;
+      }
+      updateSliderPosition(type);
+    }
+
+    function setSlide(index, type) {
+      if (type === 'pve') {
+        pveCurrentSlide = index;
+      } else {
+        pvpCurrentSlide = index;
+      }
+      updateSliderPosition(type);
+    }
+
+    function updateSliderPosition(type) {
+      const currentSlide = type === 'pve' ? pveCurrentSlide : pvpCurrentSlide;
+      const slider = type === 'pve' ? pveSliderWrapper : pvpSliderWrapper;
+      const dots = type === 'pve' ? pveDots : pvpDots;
+      slider.style.transform = `translateX(-${currentSlide * 100}%)`;
+      dots.forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentSlide);
+      });
+    }
+
+    function launchBattle() {
+      window.location.href = `index.html?map=${pveCurrentSlide}`;
+    }
+
+    function launchPvP() {
+      window.location.href = `index2.html?map=${pvpCurrentSlide}`;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (pveModal.classList.contains('active')) {
+        if (e.key === 'ArrowLeft') moveSlide(-1, 'pve');
+        if (e.key === 'ArrowRight') moveSlide(1, 'pve');
+        if (e.key === 'Escape') closePveModal();
+      }
+      if (pvpModal.classList.contains('active')) {
+        if (e.key === 'ArrowLeft') moveSlide(-1, 'pvp');
+        if (e.key === 'ArrowRight') moveSlide(1, 'pvp');
+        if (e.key === 'Escape') closePvpModal();
+      }
+    });
+  </script>
+</body>
+</html>
