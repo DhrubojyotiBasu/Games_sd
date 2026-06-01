@@ -196,7 +196,7 @@
     /* Custom Notification Engine Styles */
     #toastContainer { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
     .toast { background: #1e293b; color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px 24px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); animation: slideDown 0.3s ease-out forwards; }
-    @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes slideDown { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     
     .confirm-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: center; z-index: 3000; }
     .player-row-lobby { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; align-items: center; }
@@ -278,20 +278,21 @@
     .show-5 { transform: rotateX(-90deg) rotateY(0deg); }
     .show-6 { transform: rotateX(90deg) rotateY(0deg); }
 
-    /* Requirement 4: Move History Dashboard Panel */
+    /* Modified Move History Dashboard Sizing Properties */
     .history-log-box {
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 12px;
       padding: 10px;
-      height: 180px;
+      flex: 1 !important; /* Forces the box to stretch into all available height */
+      min-height: 280px;  /* Raised from 180px to give history massive focus space */
       overflow-y: auto;
       font-family: monospace;
       font-size: 0.8rem;
       display: flex;
       flex-direction: column;
       gap: 6px;
-      margin-top: 10px;
+      margin-top: 8px;
       scroll-behavior: smooth;
     }
     .history-entry {
@@ -373,15 +374,44 @@
     .game-token.yellow { background-color: #eab308; }
     .game-token.green { background-color: #22c55e; }
 
+    /* Live Corner Spectator Mode Icon Overlay indicator */
+    .corner-spectator-indicator {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+    .spectator-pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: trackingPulse 1.5s infinite ease-in-out;
+    }
+    @keyframes trackingPulse {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.8); opacity: 0.5; }
+    }
+
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <!-- Live Toast Space -->
   <div id="toastContainer"></div>
 
-  <!-- Realtime Confirmation Dialog Modal -->
   <div id="confirmOverlay" class="confirm-overlay hidden">
     <div class="gameover-card" style="padding: 24px; width: 340px; text-align: center;">
       <div id="confirmTitle" style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: white;">Leave Battle?</div>
@@ -394,27 +424,23 @@
     </div>
   </div>
 
-  <!-- Board Selection Modal Overlay — Requirement 2: large-modal structural flag attached -->
   <div id="boardModalOverlay" class="setup-overlay hidden" style="z-index: 2500;">
     <div class="setup-card large-modal">
       <h2 style="font-size: 1.6rem; color: #f8fafc; margin-bottom: 4px;">Select Match Arena Map</h2>
       <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 12px;">Review details and designs before committing your tokens to battle.</p>
       
       <div id="boardOptionsContainer" class="board-options-grid">
-        <!-- Injected dynamically by JS module -->
-      </div>
+        </div>
       
       <button id="closeBoardModalBtn" class="primary-btn" style="width: 100%; background: #475569; margin-top: 10px;">Close Preview</button>
     </div>
   </div>
 
-  <!-- Lobby Interface Gateway Overlay -->
   <div id="lobbyOverlay" class="setup-overlay">
     <div class="setup-card">
       <h2 style="font-size: 1.8rem; margin-bottom: 6px; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎲 Serpent Ascent Online</h2>
       <p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 16px;">Firebase Multi-player Lobby Environment</p>
 
-      <!-- Step 1: Initial Credentials Screen -->
       <div id="lobbyInitialActions" class="lobby-action-group">
         <input type="text" id="playerNameInput" placeholder="Enter Your Name" class="lobby-input" maxlength="14" />
         <button id="hostRoomBtn" class="primary-btn">Host New Room</button>
@@ -424,21 +450,20 @@
         <button onclick="history.back()" class="danger-btn" style="margin-top: 4px;">Go Back</button>
       </div>
 
-      <!-- Step 2: Synchronized Room Lobby Screen -->
       <div id="lobbyRoomSetup" class="lobby-action-group hidden">
         <div class="room-code-display">Room ID: <strong id="displayRoomId">—</strong></div>
         <div id="lobbyStatusText" class="lobby-status">Waiting for connections...</div>
         
         <div class="color-assignment-box">
-          <!-- Requirement 6: Room names visibility header target container -->
-          <div class="config-heading" style="margin-bottom: 8px;">Connected Room Manifest (<span id="connectedCount">0</span>/4)</div>
+          <div class="config-heading" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Connected Room Manifest (<span id="connectedCount">0</span>/4)</span>
+            <span id="lobbySpectatorCounterBadge" style="color: #64748b; font-size: 0.75rem; text-transform: none; font-weight: 600;">0 Spectating</span>
+          </div>
           <div id="lobbyPlayersList" style="max-height: 140px; overflow-y: auto; margin-bottom: 10px;"></div>
         </div>
 
-        <!-- Configurations Settings UI Panel -->
         <div class="host-config-box">
           
-          <!-- Board Selection System -->
           <div>
             <span class="config-heading">Arena Selection</span>
             <div class="board-preview-area">
@@ -446,15 +471,12 @@
                 <img id="lobbyBoardThumb" class="board-thumb" src="asset/Board1.png" alt="Board">
                 <span id="lobbyBoardName" class="board-name-display">Classic Arena</span>
               </div>
-              <!-- Requirement 1: Conditional visibility controlled via programmatic runtime switches -->
               <button id="openBoardModalBtn" class="primary-btn hidden" style="width:100px;padding: 7px; font-size: 0.85rem;">Change</button>
             </div>
           </div>
 
-          <!-- Color Assignment Layout Area -->
           <div style="width: 100%;">
             <span class="config-heading">Choose Color Variant Tag</span>
-            <!-- Requirement 5: Programmatic Injection Point for Filtered Selection Grids -->
             <div id="dynamicColorSelectionArea" class="color-selection-grid"></div>
           </div>
         </div>
@@ -465,20 +487,17 @@
     </div>
   </div>
 
-  <!-- Dynamic Post Match Podiums Overlay -->
   <div id="gameOverOverlay" class="gameover-overlay hidden" style="z-index: 4000;">
     <div class="gameover-card">
       <div id="gameOverIcon" class="gameover-icon">🏆</div>
       <div id="gameOverTitle" class="gameover-title">Match Completed</div>
       <div id="gameOverSub" class="gameover-sub">Final Standings:</div>
       <div id="finalStandingsContainer" class="standings-list"></div>
-      <button type="button" id="gameOverCloseBtn" class="gameover-btn" style="background: #2563eb; margin-top: 14px; width: 100%;">Return to Main Menu</button>
+      <button type="button" id="gameOverCloseBtn" class="gameover-btn" style="background: #ef4444; margin-top: 14px; width: 100%;">Close Arena & Clean Server</button>
     </div>
   </div>
 
-  <!-- Play Interface Grid Layout Matrix -->
   <div class="layout">
-    <!-- Left Action Control Deck -->
     <aside class="sidebar left-panel">
       <div class="sidebar-section">
         <h2>Match Deck</h2>
@@ -486,7 +505,6 @@
           <div class="turn-indicator" id="turnIndicator">Awaiting Game Start...</div>
           
           <div style="width:100%; display:flex; flex-direction:column; align-items:center; gap:10px; margin: 12px 0;">
-            <!-- Requirement 3: 3D Grid Dice Structured Setup -->
             <div class="dice-container-3d">
               <div id="diceCubeObject" class="cube-dice show-1">
                 <div class="cube-face face-1"><span class="pip-mc"></span></div>
@@ -502,53 +520,53 @@
           
           <button type="button" id="rollBtn" class="roll-btn" style="width:100%;" disabled>ROLL DICE</button>
           
-          <!-- Leave and Spectate Management -->
           <button type="button" id="leaveBattleBtn" class="resign-btn" disabled>LEAVE BATTLE</button>
           <button type="button" id="stopSpectatingBtn" class="danger-btn hidden" style="width: 100%; margin-top: 8px;">STOP SPECTATING</button>
         </div>
       </div>
       
-      <!-- Requirement 7: Left Panel Live Color Mapping Index Dashboard -->
       <div class="sidebar-section" style="margin-top: 14px;">
         <h2>Arena Index Manifest</h2>
         <div id="leftPanelIndexContainer" class="index-tag-container"></div>
       </div>
     </aside>
 
-    <!-- Center Board Matrix Render Viewport -->
-    <main class="board-main">
+    <main class="board-main" style="position: relative;">
+      <div id="cornerSpectatorOverlayBadge" class="corner-spectator-indicator hidden">
+        <div class="spectator-pulse-dot"></div>
+        <span>SPECTATING ARENA</span>
+      </div>
+
       <div class="board-wrapper">
         <div id="board-container" style="position: relative;">
           <img id="board-bg" src="asset/Board1.png" alt="Board Map">
           <div class="board-grid" id="boardGrid"></div>
-          <!-- Real-time structural node for absolute positioning of tokens -->
           <div id="token-layer" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none;"></div>
         </div>
         <div class="status" id="statusEl">Set up your room configuration to begin the match!</div>
       </div>
     </main>
 
-    <!-- Right Live Leaderboard Feed -->
     <aside class="sidebar right-panel" style="display: flex; flex-direction: column; gap: 14px;">
-      <div class="sidebar-section" style="flex: 1; display: flex; flex-direction: column;">
-        <h2>Leaderboard</h2>
-        <div id="scoreboardContainer" class="scoreboard" style="display:flex; flex-direction:column; gap:8px; flex: 1; overflow-y: auto;"></div>
+      <div class="sidebar-section" style="flex: 0 0 auto; display: flex; flex-direction: column; padding-bottom: 4px; margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <h2>Leaderboard</h2>
+          <span id="rightPanelSpectatorCountBadge" style="font-size: 0.75rem; color: #64748b; font-weight: bold; background: rgba(255,255,255,0.03); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">0 Spectators</span>
+        </div>
+        <div id="scoreboardContainer" class="scoreboard" style="display:flex; flex-direction:column; gap:6px; margin-top: 6px; max-height: 160px; overflow-y: auto;"></div>
       </div>
       
-      <!-- Requirement 4: Real-time Move Record Box Log Component -->
-      <div class="sidebar-section" style="flex: 1; display: flex; flex-direction: column;">
+      <div class="sidebar-section" style="flex: 1 1 auto; display: flex; flex-direction: column; padding-top: 4px;">
         <h2>Move History Logs</h2>
         <div id="moveRecordHistoryBox" class="history-log-box"></div>
       </div>
     </aside>
     
-    <!-- Requirement 8: Bottom Live Turn Commentary Dashboard Status Ticker -->
     <footer id="globalTurnCommentaryBar" class="bottom-commentary-bar">
       Lobby Initialization Phase — Waiting for match orchestration setup.
     </footer>
   </div>
 
-  <!-- Firebase Context Module and Client Runtime Engine -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
@@ -623,6 +641,11 @@
     const networkStartBtn = document.getElementById('networkStartBtn');
     const leaveLobbyBtn = document.getElementById('leaveLobbyBtn');
     const dynamicColorSelectionArea = document.getElementById('dynamicColorSelectionArea');
+    
+    // Spectator Interface Badges Elements
+    const lobbySpectatorCounterBadge = document.getElementById('lobbySpectatorCounterBadge');
+    const rightPanelSpectatorCountBadge = document.getElementById('rightPanelSpectatorCountBadge');
+    const cornerSpectatorOverlayBadge = document.getElementById('cornerSpectatorOverlayBadge');
     
     // Board Selection Elements
     const lobbyBoardThumb = document.getElementById('lobbyBoardThumb');
@@ -730,11 +753,18 @@
     // Requirement 5: Programmatic Dynamic Filtered Token Panel Component
     function buildInteractiveColorFilterMatrix(playersList) {
       dynamicColorSelectionArea.innerHTML = '';
+      
+      // If local user is joined directly as spectator, hide available choice grid controls
+      if(activePlayersData[localPlayerId]?.isSpectator) {
+        dynamicColorSelectionArea.innerHTML = '<div style="font-size:0.85rem; color:#64748b; padding:4px;">Roster options locked. Active spectator mode engaged.</div>';
+        return;
+      }
+
       const pool = ["red", "blue", "yellow", "green"];
       
       // Determine what tokens are taken by other clients
       const occupiedColors = playersList
-        .filter(p => p.id !== localPlayerId)
+        .filter(p => p.id !== localPlayerId && !p.isSpectator)
         .map(p => p.color);
 
       pool.forEach(color => {
@@ -856,38 +886,73 @@
         }
         
         const roomData = roomSnapshot.val();
-        if(roomData.meta.state !== "lobby") {
-          showToast("Match is already in progress or completed.");
-          return;
-        }
-
         const currentPlayers = Object.values(roomData.players || {});
-        if(currentPlayers.length >= 4) {
-          showToast("Room is full. Max 4 players allowed.");
-          return;
+        const activeInPlayCount = currentPlayers.filter(p => !p.isSpectator).length;
+        
+        let forceDirectSpectate = false;
+
+        // AUTOMATED DIRECT SPECTATE ENGAGEMENT CONDITIONS
+        if(roomData.meta.state !== "lobby") {
+          forceDirectSpectate = true;
+          showToast("Match is in progress. Entering arena directly as a Spectator...");
+        } else if(activeInPlayCount >= 4) {
+          forceDirectSpectate = true;
+          showToast("Roster slots are full (4/4). Entering layout as a Spectator...");
         }
 
-        const assignedColor = determineAutomaticColorToken(currentPlayers);
-        selectedColor = assignedColor;
+        if(forceDirectSpectate) {
+          // Join directly as an active spectator
+          selectedColor = "gray";
+          const joinerPayload = {
+            id: localPlayerId,
+            name: localPlayerName,
+            color: "gray",
+            pos: 0,
+            unlocked: false,
+            isSpectator: true, // Forces spectator mode bypassing lobby selection grids
+            rank: 0,
+            connectedAt: Date.now()
+          };
 
-        const joinerPayload = {
-          id: localPlayerId,
-          name: localPlayerName,
-          color: selectedColor,
-          pos: 0,
-          unlocked: false,
-          isSpectator: false,
-          rank: 0,
-          connectedAt: Date.now()
-        };
+          const localPlayerRef = ref(db, `rooms/${roomId}/players/${localPlayerId}`);
+          await set(localPlayerRef, joinerPayload);
+          onDisconnect(localPlayerRef).remove();
+          
+          displayRoomId.textContent = roomId;
+          lobbyInitialActions.classList.add('hidden');
+          
+          if(roomData.meta.state === "playing") {
+            lobbyOverlay.classList.add('hidden'); // Close overlays completely if the game is already in progress
+            matchStarted = true;
+            leaveBattleBtn.classList.add('hidden');
+            stopSpectatingBtn.classList.remove('hidden');
+          } else {
+            lobbyRoomSetup.classList.remove('hidden'); // Show lobby layout if just waiting on space limits
+          }
+        } else {
+          // Standard Active Player Setup
+          const assignedColor = determineAutomaticColorToken(currentPlayers);
+          selectedColor = assignedColor;
 
-        const localPlayerRef = ref(db, `rooms/${roomId}/players/${localPlayerId}`);
-        await set(localPlayerRef, joinerPayload);
-        onDisconnect(localPlayerRef).remove();
-        
-        displayRoomId.textContent = roomId;
-        lobbyInitialActions.classList.add('hidden');
-        lobbyRoomSetup.classList.remove('hidden');
+          const joinerPayload = {
+            id: localPlayerId,
+            name: localPlayerName,
+            color: selectedColor,
+            pos: 0,
+            unlocked: false,
+            isSpectator: false,
+            rank: 0,
+            connectedAt: Date.now()
+          };
+
+          const localPlayerRef = ref(db, `rooms/${roomId}/players/${localPlayerId}`);
+          await set(localPlayerRef, joinerPayload);
+          onDisconnect(localPlayerRef).remove();
+          
+          displayRoomId.textContent = roomId;
+          lobbyInitialActions.classList.add('hidden');
+          lobbyRoomSetup.classList.remove('hidden');
+        }
 
         establishRoomSynchronizer();
       } catch(e) {
@@ -897,7 +962,7 @@
 
     function determineAutomaticColorToken(currentPlayersList) {
       const defaultPool = ["red", "blue", "yellow", "green"];
-      const takenColors = currentPlayersList.map(p => p.color);
+      const takenColors = currentPlayersList.filter(p => !p.isSpectator).map(p => p.color);
       const remaining = defaultPool.filter(c => !takenColors.includes(c));
       return remaining.length > 0 ? remaining[0] : "red";
     }
@@ -926,12 +991,18 @@
         });
         
         activePlayersData = data.players || {};
-        playersOrder = playersList.map(p => p.id).sort((a,b) => activePlayersData[a].connectedAt - activePlayersData[b].connectedAt);
+        
+        // Filter out spectators completely from normal turn processing mechanics sequences
+        playersOrder = playersList
+          .filter(p => !p.isSpectator)
+          .map(p => p.id)
+          .sort((a,b) => activePlayersData[a].connectedAt - activePlayersData[b].connectedAt);
 
         // Host Migration Protocol
         if (data.meta.state === "lobby") {
+           const connectedActivePlayers = playersList.filter(p => !p.isSpectator);
            if (data.meta.hostId !== localPlayerId && !activePlayersData[data.meta.hostId]) {
-               if (playersOrder[0] === localPlayerId && !isHost) {
+               if (connectedActivePlayers.length > 0 && connectedActivePlayers[0].id === localPlayerId && !isHost) {
                    isHost = true;
                    update(ref(db, `rooms/${roomId}/meta`), { hostId: localPlayerId });
                    showToast("The previous host left. You are now the room host.");
@@ -956,15 +1027,30 @@
         // Requirement 4: Update Right Panel Moves Record Database Log Elements
         syncMoveHistoryRecordBox(data.moves || {});
 
+        // Dynamically toggle the Live Corner Spectator Indicator Badge
+        if (activePlayersData[localPlayerId]?.isSpectator && data.meta.state === "playing") {
+          cornerSpectatorOverlayBadge.classList.remove('hidden');
+        } else {
+          cornerSpectatorOverlayBadge.classList.add('hidden');
+        }
+
         if(data.meta.state === "playing") {
           if(!matchStarted) {
             matchStarted = true;
             lobbyOverlay.classList.add('hidden');
-            leaveBattleBtn.disabled = false;
+            
+            if (activePlayersData[localPlayerId]?.isSpectator) {
+              leaveBattleBtn.classList.add('hidden');
+              stopSpectatingBtn.classList.remove('hidden');
+            } else {
+              leaveBattleBtn.disabled = false;
+              leaveBattleBtn.classList.remove('hidden');
+              stopSpectatingBtn.classList.add('hidden');
+            }
             showToast("Match has commenced!");
           }
           
-          if (isHost || playersOrder[0] === localPlayerId) {
+          if (playersOrder.length > 0 && (isHost || playersOrder[0] === localPlayerId)) {
              const safeIndex = data.meta.turnIndex % playersOrder.length;
              const expectedPlayerId = playersOrder[safeIndex];
              if (!expectedPlayerId || !activePlayersData[expectedPlayerId] || activePlayersData[expectedPlayerId].isSpectator) {
@@ -985,7 +1071,13 @@
 
     // Requirement 6: Explicit presentation tracking joined users inside the lobby setup element
     function updateLobbyUIElements(playersList, metaData) {
-      document.getElementById('connectedCount').textContent = playersList.length;
+      const totalSpectatorsCount = playersList.filter(p => p.isSpectator).length;
+      const totalActivePlayersCount = playersList.filter(p => !p.isSpectator).length;
+
+      document.getElementById('connectedCount').textContent = totalActivePlayersCount;
+      lobbySpectatorCounterBadge.textContent = `${totalSpectatorsCount} Spectating`;
+      rightPanelSpectatorCountBadge.textContent = `${totalSpectatorsCount} Spectators`;
+
       lobbyPlayersList.innerHTML = '';
       
       playersList.forEach(p => {
@@ -1007,9 +1099,16 @@
 
         const pill = document.createElement('span');
         pill.className = `spectator-badge`;
-        pill.style.backgroundColor = COLOR_HEX_MAP[p.color];
-        pill.style.color = (p.color === 'yellow') ? '#000' : '#fff';
-        pill.textContent = p.color.toUpperCase();
+        
+        if (p.isSpectator) {
+          pill.style.backgroundColor = "#4b5563";
+          pill.style.color = "#fff";
+          pill.textContent = "SPECTATOR";
+        } else {
+          pill.style.backgroundColor = COLOR_HEX_MAP[p.color];
+          pill.style.color = (p.color === 'yellow') ? '#000' : '#fff';
+          pill.textContent = p.color.toUpperCase();
+        }
         
         row.appendChild(nameGroup);
         row.appendChild(pill);
@@ -1018,11 +1117,15 @@
 
       if (isHost) {
           networkStartBtn.classList.remove('hidden');
-          networkStartBtn.disabled = (playersList.length < 2);
-          lobbyStatusText.textContent = playersList.length < 2 ? "Waiting for players (Min 2 required)..." : "Ready to launch match!";
+          networkStartBtn.disabled = (totalActivePlayersCount < 2);
+          lobbyStatusText.textContent = totalActivePlayersCount < 2 ? "Waiting for players (Min 2 required)..." : "Ready to launch match!";
       } else {
           networkStartBtn.classList.add('hidden');
-          lobbyStatusText.textContent = `Joined room successfully. Waiting for Host (${activePlayersData[metaData.hostId]?.name || 'Admin'}) to execute start command...`;
+          if (activePlayersData[localPlayerId]?.isSpectator) {
+            lobbyStatusText.textContent = "You are spectating this room. Waiting for host to launch...";
+          } else {
+            lobbyStatusText.textContent = `Joined successfully. Waiting for Host (${activePlayersData[metaData.hostId]?.name || 'Admin'}) to execute start command...`;
+          }
       }
     }
 
@@ -1040,7 +1143,7 @@
         
         const colorBlock = document.createElement('div');
         colorBlock.className = 'index-color-block';
-        colorBlock.style.backgroundColor = COLOR_HEX_MAP[p.color];
+        colorBlock.style.backgroundColor = p.isSpectator ? '#4b5563' : COLOR_HEX_MAP[p.color];
         
         const textSpan = document.createElement('span');
         textSpan.style.color = p.isSpectator ? '#64748b' : '#f8fafc';
@@ -1058,7 +1161,7 @@
       const list = Object.values(movesObject);
       
       if(list.length <= 1) {
-        moveRecordHistoryBox.innerHTML = '<div style="color:#475569; text-align:center; padding-top:40px;">Awaiting shifts engine...</div>';
+        moveRecordHistoryBox.innerHTML = '<div style="color:#475569; text-align:center; padding-top:100px;">Awaiting movement engine shifts...</div>';
         return;
       }
 
@@ -1082,12 +1185,13 @@
     networkStartBtn.addEventListener('click', async () => {
       if(!isHost || !roomId) return;
       const snap = await get(ref(db, `rooms/${roomId}/players`));
-      const pCount = snap.exists() ? Object.keys(snap.val()).length : 0;
+      const connectedPlayers = snap.exists() ? Object.values(snap.val()) : [];
+      const activeCount = connectedPlayers.filter(p => !p.isSpectator).length;
       
       await update(ref(db, `rooms/${roomId}/meta`), { 
         state: "playing", 
         turnIndex: 0,
-        initialPlayerCount: pCount 
+        initialPlayerCount: activeCount 
       });
     });
 
@@ -1097,6 +1201,15 @@
       buildLeaderboardDashboard();
 
       const meta = roomData.meta;
+      
+      if (playersOrder.length === 0) {
+        turnIndicator.textContent = "Spectating Match...";
+        turnIndicator.style.background = "#475569";
+        rollBtn.disabled = true;
+        globalTurnCommentaryBar.textContent = "No active players remaining. Match state is idling.";
+        return;
+      }
+
       const safeTurnIndex = meta.turnIndex % playersOrder.length;
       const activeTurnPlayerId = playersOrder[safeTurnIndex];
       
@@ -1134,8 +1247,11 @@
         diceRollValue.textContent = `${activePlayersData[meta.lastRolledBy]?.name || 'Player'} rolled a ${meta.diceValue}!`;
       }
 
-      if(activeTurnPlayerId === localPlayerId) {
-        if(activePlayersData[localPlayerId].isSpectator) return;
+      if (activePlayersData[localPlayerId]?.isSpectator) {
+        turnIndicator.textContent = `Spectating: ${turnUserData.name}'s turn`;
+        turnIndicator.style.background = "#334155";
+        rollBtn.disabled = true;
+      } else if (activeTurnPlayerId === localPlayerId) {
         turnIndicator.textContent = "Your Turn! Roll the dice.";
         turnIndicator.style.background = "#16a34a";
         rollBtn.disabled = false;
@@ -1151,8 +1267,7 @@
     function renderTokensOnBoardCoordinates() {
       document.querySelectorAll('.token-container-cell').forEach(c => c.innerHTML = '');
 
-      playersOrder.forEach(pid => {
-        const player = activePlayersData[pid];
+      Object.values(activePlayersData).forEach(player => {
         if(!player || player.isSpectator || player.pos === 0) return;
 
         const cellContainer = document.getElementById(`token-container-${player.pos}`);
@@ -1168,9 +1283,13 @@
     function buildLeaderboardDashboard() {
       scoreboardContainer.innerHTML = '';
       
-      playersOrder.forEach(pid => {
-        const p = activePlayersData[pid];
-        if(!p) return;
+      const allPlayersSorted = Object.values(activePlayersData).sort((a,b) => {
+        if (a.isSpectator !== b.isSpectator) return a.isSpectator ? 1 : -1;
+        return b.pos - a.pos;
+      });
+
+      allPlayersSorted.forEach(p => {
+        if (!p) return;
 
         const card = document.createElement('div');
         card.className = `score-card`;
@@ -1178,11 +1297,11 @@
 
         card.innerHTML = `
           <div class="score-player-info">
-            <div class="player-color-dot" style="background-color: ${COLOR_HEX_MAP[p.color]};"></div>
+            <div class="player-color-dot" style="background-color: ${p.isSpectator ? '#4b5563' : COLOR_HEX_MAP[p.color]};"></div>
             <span class="player-name-text">${p.name} ${p.id === localPlayerId ? ' (You)' : ''}</span>
           </div>
           <div class="score-values">
-            <span>${p.isSpectator ? (p.rank > 0 ? `Finished #${p.rank}` : 'Spectating/Left') : `Square: ${p.pos}`}</span>
+            <span>${p.isSpectator ? (p.rank > 0 ? `Finished #${p.rank}` : 'Spectator') : `Square: ${p.pos}`}</span>
           </div>
         `;
         scoreboardContainer.appendChild(card);
@@ -1298,6 +1417,7 @@
     }
 
     function calculateNextValidTurnIndex(playersObj, sortedOrder, currentIndex) {
+      if (sortedOrder.length === 0) return 0;
       let loopCount = 0;
       let checkingIndex = currentIndex % sortedOrder.length;
       
@@ -1313,7 +1433,7 @@
     }
 
     async function skipTurnForwardTransaction(playersObj, sortedOrder, currentIndex) {
-      if(!roomId) return;
+      if(!roomId || sortedOrder.length === 0) return;
       const dynamicNextTurnIndex = calculateNextValidTurnIndex(playersObj, sortedOrder, currentIndex);
       await update(ref(db, `rooms/${roomId}/meta`), { turnIndex: dynamicNextTurnIndex });
     }
@@ -1360,7 +1480,7 @@
       const activeInPlay = playersList.filter(p => !p.isSpectator);
       let currentStandings = roomData.standings ? [...roomData.standings] : [];
 
-      const initialCount = roomData.meta.initialPlayerCount || playersList.length; 
+      const initialCount = roomData.meta.initialPlayerCount || playersList.filter(p => !p.isSpectator).length; 
       let shouldTerminate = false;
 
       if(activeInPlay.length === 1 && initialCount > 1) {
@@ -1407,7 +1527,7 @@
           row.className = 'standing-item';
           row.innerHTML = `
             <span><span class="standing-rank">#${index + 1}</span> ${item.name}</span>
-            <span style="color: ${COLOR_HEX_MAP[item.color]}; font-weight:bold;">${item.status}</span>
+            <span style="color: ${COLOR_HEX_MAP[item.color] || '#cbd5e1'}; font-weight:bold;">${item.status}</span>
           `;
           finalStandingsContainer.appendChild(row);
         });
@@ -1416,8 +1536,18 @@
       gameOverOverlay.classList.remove('hidden');
     }
 
+    // Wipes database nodes completely when final lobby screens are closed
     gameOverCloseBtn.addEventListener('click', async () => {
-      await purgeTargetRoomDataStoreAndExit();
+      if(roomId) {
+        try {
+          cleanupActiveDatabaseReferences();
+          await remove(roomRef); // Complete deletion of the node to preserve storage capacity limits
+          showToast("Server space cleared successfully.");
+        } catch(e) {
+          console.error("Error executing completion wipe:", e);
+        }
+      }
+      handleGracefulExit();
     });
 
     leaveLobbyBtn.addEventListener('click', async () => {
@@ -1434,6 +1564,7 @@
             const roomData = roomSnapshot.val();
             const currentPlayersKeys = Object.keys(roomData.players || {});
             
+            // Explicit check: If the last player drops out, delete the room completely
             if(currentPlayersKeys.length <= 1) {
               await remove(roomRef);
             } else {
@@ -1475,6 +1606,7 @@
       lobbyRoomSetup.classList.add('hidden');
       gameOverOverlay.classList.add('hidden');
       boardModalOverlay.classList.add('hidden');
+      cornerSpectatorOverlayBadge.classList.add('hidden');
       
       rollBtn.disabled = true;
       leaveBattleBtn.disabled = true;
