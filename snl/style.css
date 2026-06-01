@@ -101,7 +101,7 @@ main.board-main {
 }
 
 /* ── Board container ── */
-.board-container {
+#board-container {
   position: relative;
   width: 700px;
   height: 700px;
